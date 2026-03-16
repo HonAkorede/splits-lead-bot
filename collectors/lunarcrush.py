@@ -20,26 +20,33 @@ async def collect_lunarcrush() -> str:
                 headers={"Authorization": f"Bearer {LUNARCRUSH_API_KEY}"},
                 params={"sort": "galaxy_score", "limit": 30},
             )
+
+            if resp.status_code != 200:
+                return f"[LunarCrush] API returned HTTP {resp.status_code}. Key may be invalid or API changed."
+
             data = resp.json()
             coins = data.get("data", [])
 
+            # Skip major tokens
+            skip = {"BTC", "ETH", "SOL", "BNB", "USDT", "USDC", "XRP", "ADA", "DOGE", "AVAX"}
+
             for coin in coins:
-                name = coin.get("name", "Unknown")
-                symbol = coin.get("symbol", "?")
+                name = coin.get("name") or "Unknown"
+                symbol = coin.get("symbol") or "?"
                 galaxy_score = coin.get("galaxy_score", 0)
                 alt_rank = coin.get("alt_rank", 0)
-                categories = coin.get("categories", "")
+                categories = coin.get("categories") or ""
 
-                # Skip pure L1s and major tokens — we want projects
-                if symbol in ("BTC", "ETH", "SOL", "BNB", "USDT", "USDC"):
+                if symbol in skip:
                     continue
 
                 results.append(
-                    f"- {name} ({symbol}) | Galaxy Score: {galaxy_score} | "
-                    f"Alt Rank: {alt_rank} | Categories: {categories}"
+                    f"\n  ⭐ *{name}* ({symbol})\n"
+                    f"     Galaxy Score: {galaxy_score} | Alt Rank: #{alt_rank}\n"
+                    f"     Categories: {categories}"
                 )
 
-            results = results[:15]
+            results = results[:12]
 
         except Exception as e:
             return f"[LunarCrush] Error: {e}"
@@ -47,4 +54,8 @@ async def collect_lunarcrush() -> str:
     if not results:
         return "[LunarCrush] No trending projects found."
 
-    return "LunarCrush Trending Projects:\n" + "\n".join(results)
+    return (
+        "🌙 *LUNARCRUSH TRENDING*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        + "\n".join(results)
+    )

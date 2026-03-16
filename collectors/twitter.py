@@ -17,7 +17,7 @@ async def collect_twitter() -> str:
     all_tweets = []
 
     async with httpx.AsyncClient(timeout=120) as client:
-        for keyword in SEARCH_KEYWORDS[:6]:  # Limit to avoid rate limits
+        for keyword in SEARCH_KEYWORDS[:4]:  # Limit to avoid rate limits
             try:
                 # Start Apify actor run
                 run_resp = await client.post(
@@ -25,7 +25,7 @@ async def collect_twitter() -> str:
                     params={"token": APIFY_API_TOKEN},
                     json={
                         "searchTerms": [keyword],
-                        "maxTweets": 20,
+                        "maxTweets": 10,
                         "sort": "Latest",
                     },
                 )
@@ -34,20 +34,17 @@ async def collect_twitter() -> str:
                 if not run_id:
                     continue
 
-                # Poll for completion (max 90s)
-                for _ in range(18):
+                # Poll for completion (max 60s)
+                status = None
+                for _ in range(12):
                     await asyncio.sleep(5)
                     status_resp = await client.get(
                         f"{APIFY_BASE}/actor-runs/{run_id}",
                         params={"token": APIFY_API_TOKEN},
                     )
                     status = status_resp.json().get("data", {}).get("status")
-                    if status == "SUCCEEDED":
+                    if status in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
                         break
-                    if status in ("FAILED", "ABORTED", "TIMED-OUT"):
-                        break
-                else:
-                    continue
 
                 if status != "SUCCEEDED":
                     continue
@@ -60,19 +57,32 @@ async def collect_twitter() -> str:
                 )
                 items_resp = await client.get(
                     f"{APIFY_BASE}/datasets/{dataset_id}/items",
-                    params={"token": APIFY_API_TOKEN, "limit": 20},
+                    params={"token": APIFY_API_TOKEN, "limit": 10},
                 )
                 items = items_resp.json()
 
                 for tweet in items:
-                    text = tweet.get("full_text") or tweet.get("text", "")
-                    user = tweet.get("user", {}).get("screen_name", "unknown")
-                    all_tweets.append(f"@{user}: {text[:300]}")
+                    text = (tweet.get("full_text") or tweet.get("text") or "")[:200]
+                    user = tweet.get("user", {}).get("screen_name") or "unknown"
+                    name = tweet.get("user", {}).get("name") or user
+                    followers = tweet.get("user", {}).get("followers_count", 0)
+
+                    all_tweets.append(
+                        f"\n  🐦 *{name}* (@{user})\n"
+                        f"     Followers: {followers:,}\n"
+                        f"     \"{text}\""
+                    )
 
             except Exception as e:
-                all_tweets.append(f"[Twitter error for '{keyword}']: {e}")
+                all_tweets.append(f"  [Twitter error for '{keyword}']: {e}")
 
     if not all_tweets:
         return "[Twitter] No results found for current keywords."
 
-    return "Twitter/X Leads:\n" + "\n---\n".join(all_tweets)
+    all_tweets = all_tweets[:15]
+
+    return (
+        "🐦 *TWITTER/X SIGNALS*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        + "\n".join(all_tweets)
+    )

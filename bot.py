@@ -13,8 +13,8 @@ from collectors import (
     collect_defillama,
     collect_lunarcrush,
     collect_onchain,
+    collect_raises,
 )
-from analyzer import analyze_leads
 from telegram_sender import send_report
 
 
@@ -28,12 +28,13 @@ async def run_pipeline() -> None:
         collect_defillama(),
         collect_lunarcrush(),
         collect_onchain(),
+        collect_raises(),
         return_exceptions=True,
     )
 
     # Combine results into a single data block
     sections = []
-    source_names = ["Twitter/X", "Farcaster", "DeFiLlama", "LunarCrush", "Onchain"]
+    source_names = ["Twitter/X", "Farcaster", "DeFiLlama", "LunarCrush", "Onchain", "Raises"]
     for name, result in zip(source_names, results):
         if isinstance(result, Exception):
             sections.append(f"[{name}] Collection error: {result}")
@@ -63,16 +64,12 @@ async def run_pipeline() -> None:
         print("Sent 'no data' alert to Telegram.")
         return
 
-    # Analyze with Claude
-    print("Analyzing leads with Claude...")
-    report = await analyze_leads(collected_data)
-
-    # Add header
+    # Send raw signals directly
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     header = f"📊 *Splits Lead Intelligence — {date_str}*\n\n"
-    full_report = header + report
+    full_report = header + collected_data
 
-    # Send to Telegram
+    # send_report handles 4096-char splitting at newline boundaries
     await send_report(full_report)
     print(f"Report sent to Telegram ({len(full_report)} chars).")
 

@@ -3,13 +3,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-TELEGRAM_BOT_TOKEN = os.environ["8733814311:AAHTM-Yk6QYUkvcIm2f6NTQUYAs7OaMrEO0"]
-TELEGRAM_CHAT_ID = os.environ["5756853333"]
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-APIFY_API_TOKEN = os.getenv("apify_api_Z9v9sjrlUgz4vYY5572Xa4bQNmXtbh2qG1K", "")
-NEYNAR_API_KEY = os.getenv("AFD07FEB-1FE5-4912-8703-1734750C19EB", "")
-LUNARCRUSH_API_KEY = os.getenv("e61uvuw6rytuakn7eq9l6k82kxmmdspeu0dthxrlb", "")
+APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "")
+NEYNAR_API_KEY = os.getenv("NEYNAR_API_KEY", "")
+LUNARCRUSH_API_KEY = os.getenv("LUNARCRUSH_API_KEY", "")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "")
 
 CRON_SCHEDULE = os.getenv("CRON_SCHEDULE", "0 9 * * *")
